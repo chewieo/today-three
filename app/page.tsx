@@ -22,6 +22,9 @@ type Task = {
 export default function Home() {
   const router = useRouter();
 
+  const { data: session, isPending: sessionLoading } =
+    authClient.useSession();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskText, setTaskText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -30,6 +33,7 @@ export default function Home() {
   async function loadTasks() {
     try {
       setLoading(true);
+      setError("");
 
       const data = await getTasks();
 
@@ -48,8 +52,17 @@ export default function Home() {
   }
 
   useEffect(() => {
+    if (sessionLoading) {
+      return;
+    }
+
+    if (!session) {
+      router.replace("/login");
+      return;
+    }
+
     loadTasks();
-  }, []);
+  }, [session, sessionLoading, router]);
 
   async function addTask() {
     if (!taskText.trim()) return;
@@ -131,6 +144,18 @@ export default function Home() {
 
       setError("Could not sign out.");
     }
+  }
+
+  if (sessionLoading || !session) {
+    return (
+      <main className="min-h-screen bg-slate-100 p-8 text-black">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-gray-600">
+            Loading...
+          </p>
+        </div>
+      </main>
+    );
   }
 
   const todayTasks = tasks.filter(
